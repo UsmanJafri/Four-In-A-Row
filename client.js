@@ -99,9 +99,9 @@ const hoverInUpdate = (v,c) => {
         squaresList[(r * 7) + (c*1)].props.style.backgroundColor=hoverColor
     }
     ReactDOM.render(
-        (document.title = "Connect-4",
+        (document.title = "Four-In-A-Row",
         React.createElement('div',{id: 'myGrid'},
-            React.createElement('h2',null,"Welcome to Connect-4"),
+            React.createElement('h2',null,"Welcome to Four-In-A-Row"),
             React.createElement('div',{id: 'p1'},React.createElement('h4',null,"X - Not Connected")),
             React.createElement('div',{id: 'p2'},React.createElement('h4',null,"O - Not Connected")),
             React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS:")),
@@ -119,9 +119,9 @@ const setState = updates => {
     Object.assign(state,updates)
     const squaresList = state.squares.map((d,i) => React.createElement('button',{style: {'max-width': '24px',padding: '10px 24px'},key: i,value: i,'data-column': i%7,onClick: (e) => moveUpdate(e,e.target.dataset.column),onMouseOver: (e)=> hoverInUpdate(e.target.value,e.target.dataset.column),onMouseOut: (e)=> setState()},state.squares[i]))
     ReactDOM.render(
-        (document.title = "Connect-4",
+        (document.title = "Four-In-A-Row",
         React.createElement('div',{id: 'myGrid'},
-            React.createElement('h2',null,"Welcome to Connect-4"),
+            React.createElement('h2',null,"Welcome to Four-In-A-Row"),
             React.createElement('div',{id: 'p1'},React.createElement('h4',null,"X - Not Connected")),
             React.createElement('div',{id: 'p2'},React.createElement('h4',null,"O - Not Connected")),
             React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS:")),

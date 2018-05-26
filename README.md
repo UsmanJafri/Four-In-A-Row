@@ -8,3 +8,8 @@ A purely NodeJS + ReactJS implementation of the classic Four-In-A-Row game. (Onl
 ### Instructions (Client)
 1. To play the Four-In-A-Row browse to **/client.html** of the host URL. (e.g: http://localhost:8000/client.html)
 2. The player will then either wait for another player to connect or immediately start a game session if another player was already waiting.
+### Features
+- Columns on mouse-over are highlighted red if the other player could potentially win in the next move
+- New game starts immediately as soon as previous ends
+- Multiple parallel game instances
+- Player notified if opponent leaves
