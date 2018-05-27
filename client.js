@@ -110,7 +110,8 @@ const hoverInUpdate = (v,c) => {
             React.createElement('div',{id: 2},squaresList.slice(14,21)),
             React.createElement('div',{id: 3},squaresList.slice(21,28)),
             React.createElement('div',{id: 4},squaresList.slice(28,35)),
-            React.createElement('div',{id: 5},squaresList.slice(35,42))
+            React.createElement('div',{id: 5},squaresList.slice(35,42)),
+            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online:'))
         )
     ),document.getElementById('root'))
 }
@@ -130,7 +131,8 @@ const setState = updates => {
             React.createElement('div',{id: 2},squaresList.slice(14,21)),
             React.createElement('div',{id: 3},squaresList.slice(21,28)),
             React.createElement('div',{id: 4},squaresList.slice(28,35)),
-            React.createElement('div',{id: 5},squaresList.slice(35,42))
+            React.createElement('div',{id: 5},squaresList.slice(35,42)),
+            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online:'))
         )
     ),document.getElementById('root'))
 }
@@ -164,5 +166,6 @@ socket.on('squaresUpdate',(newSquares,newColSizes) => {
     setState({squares: newSquares,columnSize: newColSizes})
     state.enemyWin = checkEnemyWin()
 })
+socket.on('playerCountUpdate',data => ReactDOM.render(React.createElement('h4',null,'Players Online: '+data),document.getElementById('playerCount')))
 
 setState({gameId: '',squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],game: false,turn: false,symbol: '',enemySymbol: '',enemyWin: -1})

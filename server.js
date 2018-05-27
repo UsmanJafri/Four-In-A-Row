@@ -107,12 +107,14 @@ io.sockets.on('connection',socket => {
         socket.emit('playerSym','X')
         playerCount++
         states[sID].x.emit('status','Waiting for O to connect')
+        io.sockets.emit('playerCountUpdate',playerCount)
     }
     else {
         console.log('State ID:',sID,', O Connected')
         states[sID].o = socket
         socket.emit('playerSym','O')
         playerCount++
+        io.sockets.emit('playerCountUpdate',playerCount)
         states[sID].x.emit('gameStart',sID)
         states[sID].o.emit('gameStart',sID)
         turnUpdate('X',0,sID)
@@ -135,6 +137,7 @@ io.sockets.on('connection',socket => {
                 console.log('State ID:',i,', X Left')
                 if (s.o != '') {
                     s.o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+                    io.sockets.emit('playerCountUpdate',playerCount-1)
                     states[i].o.disconnect()
                 }
                 playerCount--
@@ -144,6 +147,7 @@ io.sockets.on('connection',socket => {
                 console.log('State ID:',i,', O Left')
                 if (s.x != '') {
                     s.x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+                    io.sockets.emit('playerCountUpdate',playerCount-1)
                     states[i].x.disconnect()
                 }
                 playerCount--
