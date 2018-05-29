@@ -137,20 +137,20 @@ io.sockets.on('connection',socket => {
                 console.log('State ID:',k,', X Left')
                 if (states[k].o != '') {
                     states[k].o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
-                    io.sockets.emit('playerCountUpdate',playerCount-1)
                     states[k].o.disconnect()
                 }
                 playerCount--
+                io.sockets.emit('playerCountUpdate',playerCount)
                 delete states[k]
             }
             else if (states[k].o == socket) {
                 console.log('State ID:',k,', O Left')
                 if (states[k].x != '') {
                     states[k].x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
-                    io.sockets.emit('playerCountUpdate',playerCount-1)
                     states[k].x.disconnect()
                 }
                 playerCount--
+                io.sockets.emit('playerCountUpdate',playerCount)
                 delete states[k]
             }
         }
