@@ -2,7 +2,8 @@ const fs = require('fs')
 const http = require("http")
 const socketio = require('socket.io')
 
-states = []
+states = {}
+lastAssignedState = -1
 playerCount = 0
 const server = http.createServer(async (req,resp) => resp.end(await readfile(req.url.substr(1))))
 const io = socketio(server)
@@ -97,27 +98,26 @@ const turnUpdate = (newTurn,outcome,sID) => {
 }
 
 io.sockets.on('connection',socket => {
-    let sID = states.length - 1
     if (playerCount % 2 == 0) {
         const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: 'u',notTurn: '',notTurnSymbol: ''}
-        states.push(newState)
-        sID = states.length - 1
-        console.log('State ID:',sID,', X Connected')
-        states[sID].x = socket
+        lastAssignedState += 1
+        states[lastAssignedState] = newState
+        console.log('State ID:',lastAssignedState,', X Connected')
+        states[lastAssignedState].x = socket
         socket.emit('playerSym','X')
         playerCount++
-        states[sID].x.emit('status','Waiting for O to connect')
+        states[lastAssignedState].x.emit('status','Waiting for O to connect')
         io.sockets.emit('playerCountUpdate',playerCount)
     }
     else {
-        console.log('State ID:',sID,', O Connected')
-        states[sID].o = socket
+        console.log('State ID:',lastAssignedState,', O Connected')
+        states[lastAssignedState].o = socket
         socket.emit('playerSym','O')
         playerCount++
         io.sockets.emit('playerCountUpdate',playerCount)
-        states[sID].x.emit('gameStart',sID)
-        states[sID].o.emit('gameStart',sID)
-        turnUpdate('X',0,sID)
+        states[lastAssignedState].x.emit('gameStart',lastAssignedState)
+        states[lastAssignedState].o.emit('gameStart',lastAssignedState)
+        turnUpdate('X',0,lastAssignedState)
     }
 
     socket.on('turnPlayed',(pos,sID) => {
@@ -132,27 +132,27 @@ io.sockets.on('connection',socket => {
     })
 
     socket.on('disconnect',() => {
-        states.forEach((s,i) => {
-            if (s.x == socket) {
-                console.log('State ID:',i,', X Left')
-                if (s.o != '') {
-                    s.o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+        for (var [k,v] of Object.entries(states)) {
+            if (states[k].x == socket) {
+                console.log('State ID:',k,', X Left')
+                if (states[k].o != '') {
+                    states[k].o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
                     io.sockets.emit('playerCountUpdate',playerCount-1)
-                    states[i].o.disconnect()
+                    states[k].o.disconnect()
                 }
                 playerCount--
-                states[i] = []
+                delete states[k]
             }
-            else if (s.o == socket) {
-                console.log('State ID:',i,', O Left')
-                if (s.x != '') {
-                    s.x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+            else if (states[k].o == socket) {
+                console.log('State ID:',k,', O Left')
+                if (states[k].x != '') {
+                    states[k].x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
                     io.sockets.emit('playerCountUpdate',playerCount-1)
-                    states[i].x.disconnect()
+                    states[k].x.disconnect()
                 }
                 playerCount--
-                states[i] = []
+                delete states[k]
             }
-        })
+        }
     })
 })
