@@ -137,14 +137,12 @@ const setState = updates => {
     ),document.getElementById('root'))
 }
 
-socket.on('recon',() => {
-    console.log("ID:",state.gameId)
+socket.on('connectionInit',() => {
     if (state.gameId !== '') {
-        console.log("RECON",state.gameId,state.symbol)
-        socket.emit('reconResp',state.gameId,state.symbol)
+        socket.emit('connectionAck',state.gameId,state.symbol)
     }
     else {
-        socket.emit('reconResp',-1,-1)
+        socket.emit('connectionAck',-1,-1)
     }
 })
 
