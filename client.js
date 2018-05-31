@@ -104,14 +104,14 @@ const hoverInUpdate = (v,c) => {
             React.createElement('h2',null,"Welcome to Four-In-A-Row"),
             React.createElement('div',{id: 'p1'},React.createElement('h4',null,"X - Not Connected")),
             React.createElement('div',{id: 'p2'},React.createElement('h4',null,"O - Not Connected")),
-            React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS:")),
+            React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS: Not Connected")),
             React.createElement('div',{id: 0},squaresList.slice(0,7)),
             React.createElement('div',{id: 1},squaresList.slice(7,14)),
             React.createElement('div',{id: 2},squaresList.slice(14,21)),
             React.createElement('div',{id: 3},squaresList.slice(21,28)),
             React.createElement('div',{id: 4},squaresList.slice(28,35)),
             React.createElement('div',{id: 5},squaresList.slice(35,42)),
-            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online:'))
+            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online: Not Connected'))
         )
     ),document.getElementById('root'))
 }
@@ -125,17 +125,28 @@ const setState = updates => {
             React.createElement('h2',null,"Welcome to Four-In-A-Row"),
             React.createElement('div',{id: 'p1'},React.createElement('h4',null,"X - Not Connected")),
             React.createElement('div',{id: 'p2'},React.createElement('h4',null,"O - Not Connected")),
-            React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS:")),
+            React.createElement('div',{id: 'status'},React.createElement('h4',null,"STATUS: Not Connected")),
             React.createElement('div',{id: 0},squaresList.slice(0,7)),
             React.createElement('div',{id: 1},squaresList.slice(7,14)),
             React.createElement('div',{id: 2},squaresList.slice(14,21)),
             React.createElement('div',{id: 3},squaresList.slice(21,28)),
             React.createElement('div',{id: 4},squaresList.slice(28,35)),
             React.createElement('div',{id: 5},squaresList.slice(35,42)),
-            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online:'))
+            React.createElement('div',{id: 'playerCount'},React.createElement('h5',null,'Players Online: Not Connected'))
         )
     ),document.getElementById('root'))
 }
+
+socket.on('recon',() => {
+    console.log("ID:",state.gameId)
+    if (state.gameId !== '') {
+        console.log("RECON",state.gameId,state.symbol)
+        socket.emit('reconResp',state.gameId,state.symbol)
+    }
+    else {
+        socket.emit('reconResp',-1,-1)
+    }
+})
 
 socket.on('playerSym',data => {
     state.symbol = data

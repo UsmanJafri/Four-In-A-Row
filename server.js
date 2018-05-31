@@ -5,11 +5,106 @@ const socketio = require('socket.io')
 states = {}
 lastAssignedState = -1
 playerCount = 0
-const server = http.createServer(async (req,resp) => resp.end(await readfile(req.url.substr(1))))
-const io = socketio(server)
-server.listen(8000,() => console.log("Four-In-A-Row Server Running"))
 
 const readfile = f => new Promise((resolve,reject) => fs.readFile(f,(e,d) => e?reject(e):resolve(d)))
+
+const server = http.createServer(async (req,resp) => resp.end(await readfile(req.url.substr(1))))
+
+readfile("serverState.JSON").then(data => {
+    states = JSON.parse(data)
+    server.listen(8000,() => console.log("Four-In-A-Row Server Running"))
+    const io = socketio(server)
+
+    io.sockets.on('connection',socket => {
+        socket.emit('recon')
+
+        socket.on('reconResp',(stateId,symbol) => {
+            if (stateId == -1) {
+                if (playerCount % 2 == 0) {
+                    const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: 'u',notTurn: '',notTurnSymbol: ''}
+                    lastAssignedState += 1
+                    states[lastAssignedState] = newState
+                    console.log('State ID:',lastAssignedState,', X Connected')
+                    states[lastAssignedState].x = socket
+                    socket.emit('playerSym','X')
+                    playerCount++
+                    states[lastAssignedState].x.emit('status','Waiting for O to connect')
+                    io.sockets.emit('playerCountUpdate',playerCount)
+                }
+                else {
+                    console.log('State ID:',lastAssignedState,', O Connected')
+                    states[lastAssignedState].o = socket
+                    socket.emit('playerSym','O')
+                    playerCount++
+                    io.sockets.emit('playerCountUpdate',playerCount)
+                    states[lastAssignedState].x.emit('gameStart',lastAssignedState)
+                    states[lastAssignedState].o.emit('gameStart',lastAssignedState)
+                    turnUpdate('X',0,lastAssignedState)
+                }
+            } else {
+                if (symbol == 'X') {
+                    states[stateId].x = socket
+                    states[stateId].x.emit('status','Grid will be restored when O reconnects')
+                    states[stateId].x.emit('squaresUpdate',squaresInit(),[0,0,0,0,0,0,0])
+                    playerCount++
+                    console.log('State ID:',stateId,', X RE-Connected')
+                }
+                else if (symbol == 'O') {
+                    states[stateId].o = socket
+                    states[stateId].o.emit('status','Grid will be restored when X reconnects')
+                    states[stateId].o.emit('squaresUpdate',squaresInit(),[0,0,0,0,0,0,0])
+                    playerCount++
+                    console.log('State ID:',stateId,', O RE-Connected')
+                }
+                if (states[stateId].x != '' && states[stateId].o != '') {
+                    states[stateId].x.emit('squaresUpdate',states[stateId].squares,states[stateId].columnSize)
+                    states[stateId].o.emit('squaresUpdate',states[stateId].squares,states[stateId].columnSize)
+                    turnUpdate(states[stateId].turnSymbol,checkWin(stateId),stateId)
+                }
+            }
+        })
+    
+        socket.on('turnPlayed',(pos,sID) => {
+            if (socket == states[sID].turn) {
+                let newPos = (1 * pos) + (35 - (7 * states[sID].columnSize[pos]))
+                states[sID].squares[newPos] = states[sID].turnSymbol
+                states[sID].columnSize[pos]++
+                states[sID].x.emit('squaresUpdate',states[sID].squares,states[sID].columnSize)
+                states[sID].o.emit('squaresUpdate',states[sID].squares,states[sID].columnSize)
+                turnUpdate(states[sID].notTurnSymbol,checkWin(sID),sID)
+            }
+        })
+    
+        socket.on('disconnect',() => {
+            for (var [k,v] of Object.entries(states)) {
+                if (states[k].x == socket) {
+                    console.log('State ID:',k,', X Left')
+                    if (states[k].o != '') {
+                        states[k].o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+                        states[k].o.disconnect()
+                    }
+                    playerCount--
+                    io.sockets.emit('playerCountUpdate',playerCount)
+                    delete states[k]
+                    break
+                }
+                else if (states[k].o == socket) {
+                    console.log('State ID:',k,', O Left')
+                    if (states[k].x != '') {
+                        states[k].x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
+                        states[k].x.disconnect()
+                    }
+                    playerCount--
+                    io.sockets.emit('playerCountUpdate',playerCount)
+                    delete states[k]
+                    break
+                }
+            }
+        })
+    })
+}).catch(err => {
+    console.log("Error restoring server state.")
+})
 
 const ind = (r,c) => (r * 7) + c
 
@@ -94,65 +189,14 @@ const turnUpdate = (newTurn,outcome,sID) => {
         states[sID].notTurn.emit('status',"Guest's turn, Please wait")
         states[sID].turn.emit('status','Your turn')
     }
-    states[sID].turn.emit('turn')
+    let backupStates = {}
+    for (var [k,v] of Object.entries(states)) {
+        backupStates[k] = {stateID: k,squares: states[k].squares,columnSize: states[k].columnSize,turnSymbol: states[k].turnSymbol,notTurnSymbol: states[k].notTurnSymbol,x: '',o: '',turn: '',notTurn: ''}
+    }
+    fs.writeFile("serverState.JSON",JSON.stringify(backupStates),err => {
+        if (err) {
+            console.log("Error backing up server state.")
+        }
+        states[sID].turn.emit('turn')
+    })
 }
-
-io.sockets.on('connection',socket => {
-    if (playerCount % 2 == 0) {
-        const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: 'u',notTurn: '',notTurnSymbol: ''}
-        lastAssignedState += 1
-        states[lastAssignedState] = newState
-        console.log('State ID:',lastAssignedState,', X Connected')
-        states[lastAssignedState].x = socket
-        socket.emit('playerSym','X')
-        playerCount++
-        states[lastAssignedState].x.emit('status','Waiting for O to connect')
-        io.sockets.emit('playerCountUpdate',playerCount)
-    }
-    else {
-        console.log('State ID:',lastAssignedState,', O Connected')
-        states[lastAssignedState].o = socket
-        socket.emit('playerSym','O')
-        playerCount++
-        io.sockets.emit('playerCountUpdate',playerCount)
-        states[lastAssignedState].x.emit('gameStart',lastAssignedState)
-        states[lastAssignedState].o.emit('gameStart',lastAssignedState)
-        turnUpdate('X',0,lastAssignedState)
-    }
-
-    socket.on('turnPlayed',(pos,sID) => {
-        if (socket == states[sID].turn) {
-            let newPos = (1 * pos) + (35 - (7 * states[sID].columnSize[pos]))
-            states[sID].squares[newPos] = states[sID].turnSymbol
-            states[sID].columnSize[pos]++
-            states[sID].x.emit('squaresUpdate',states[sID].squares,states[sID].columnSize)
-            states[sID].o.emit('squaresUpdate',states[sID].squares,states[sID].columnSize)
-            turnUpdate(states[sID].notTurnSymbol,checkWin(sID),sID)
-        }
-    })
-
-    socket.on('disconnect',() => {
-        for (var [k,v] of Object.entries(states)) {
-            if (states[k].x == socket) {
-                console.log('State ID:',k,', X Left')
-                if (states[k].o != '') {
-                    states[k].o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
-                    states[k].o.disconnect()
-                }
-                playerCount--
-                io.sockets.emit('playerCountUpdate',playerCount)
-                delete states[k]
-            }
-            else if (states[k].o == socket) {
-                console.log('State ID:',k,', O Left')
-                if (states[k].x != '') {
-                    states[k].x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
-                    states[k].x.disconnect()
-                }
-                playerCount--
-                io.sockets.emit('playerCountUpdate',playerCount)
-                delete states[k]
-            }
-        }
-    })
-})
