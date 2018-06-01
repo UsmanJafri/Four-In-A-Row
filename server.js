@@ -13,6 +13,22 @@ const restoreBackup = () => new Promise((resolve,reject) => {
     })
 })
 
+const backup = (states,lastAssignedState) => new Promise((resolve,reject) => {
+    let backupStates = {}
+    for (var [k,v] of Object.entries(states)) {
+        backupStates[k] = {stateID: k,squares: states[k].squares,columnSize: states[k].columnSize,turnSymbol: states[k].turnSymbol,notTurnSymbol: states[k].notTurnSymbol,x: '',o: '',turn: '',notTurn: ''}
+    }
+    backupStates["lastAssignedState"] = lastAssignedState
+    fs.writeFile("serverState.JSON",JSON.stringify(backupStates),err => {
+        if (err) {
+            console.log("Error backing up server state.")
+            reject()
+        } else {
+            resolve()
+        }
+    })
+})
+
 const ind = (r,c) => (r * 7) + c
 
 const squaresInit = () => {
@@ -96,17 +112,7 @@ const turnUpdate = (states,lastAssignedState,newTurn,outcome,sID) => {
         states[sID].notTurn.emit('status',"Guest's turn, Please wait")
         states[sID].turn.emit('status','Your turn')
     }
-    let backupStates = {}
-    for (var [k,v] of Object.entries(states)) {
-        backupStates[k] = {stateID: k,squares: states[k].squares,columnSize: states[k].columnSize,turnSymbol: states[k].turnSymbol,notTurnSymbol: states[k].notTurnSymbol,x: '',o: '',turn: '',notTurn: ''}
-    }
-    backupStates["lastAssignedState"] = lastAssignedState
-    fs.writeFile("serverState.JSON",JSON.stringify(backupStates),err => {
-        if (err) {
-            console.log("Error backing up server state.")
-        }
-        states[sID].turn.emit('turn')
-    })
+    backup(states,lastAssignedState).then(states[sID].turn.emit('turn')).catch(states[sID].turn.emit('turn'))
 }
 
 let playerCount = 0
@@ -127,7 +133,7 @@ restoreBackup().then(states => {
         socket.on('connectionAck',(stateId,symbol) => {
             if (!(stateId in states)) {
                 if (playerCount % 2 == 0) {
-                    const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: 'u',notTurn: '',notTurnSymbol: ''}
+                    const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: '',notTurn: '',notTurnSymbol: ''}
                     lastAssignedState += 1
                     states[lastAssignedState] = newState
                     console.log('State ID:',lastAssignedState,', X Connected')
@@ -192,6 +198,7 @@ restoreBackup().then(states => {
                     playerCount--
                     io.sockets.emit('playerCountUpdate',playerCount)
                     delete states[k]
+                    backup(states,lastAssignedState)
                     break
                 }
                 else if (states[k].o == socket) {
@@ -203,6 +210,7 @@ restoreBackup().then(states => {
                     playerCount--
                     io.sockets.emit('playerCountUpdate',playerCount)
                     delete states[k]
+                    backup(states,lastAssignedState)
                     break
                 }
             }
