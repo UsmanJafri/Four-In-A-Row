@@ -113,12 +113,10 @@ let playerCount = 0
 
 restoreBackup().then(states => {
     let lastAssignedState = -1
-    if (states !== {}) {
-        let lastAssignedState = states["lastAssignedState"]
+    if (Object.keys(states).length !== 0) {
+        lastAssignedState = states["lastAssignedState"]
         delete states["lastAssignedState"]
     }
-    console.log(states)
-    console.log(lastAssignedState)
     const server = http.createServer(async (req,resp) => resp.end(await readfile(req.url.substr(1))))
     server.listen(8000,() => console.log("Four-In-A-Row Server Running"))
     const io = socketio(server)
