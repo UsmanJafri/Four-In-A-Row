@@ -118,6 +118,7 @@ const turnUpdate = (states,lastAssignedState,newTurn,outcome,sID) => {
 let playerCount = 0
 
 restoreBackup().then(states => {
+    let waitingState = {}
     let lastAssignedState = -1
     if (Object.keys(states).length !== 0) {
         lastAssignedState = states["lastAssignedState"]
@@ -132,25 +133,26 @@ restoreBackup().then(states => {
 
         socket.on('connectionAck',(stateId,symbol) => {
             if (!(stateId in states)) {
-                if (playerCount % 2 == 0) {
-                    const newState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: '',notTurn: '',notTurnSymbol: ''}
-                    lastAssignedState += 1
-                    states[lastAssignedState] = newState
-                    console.log('State ID:',lastAssignedState,', X Connected')
-                    states[lastAssignedState].x = socket
+                if (Object.keys(waitingState).length === 0) {
+                    waitingState = {squares: squaresInit(),columnSize: [0,0,0,0,0,0,0],x: '',o: '',turn: '',turnSymbol: '',notTurn: '',notTurnSymbol: ''}
+                    console.log('X Connected - Waiting for opponent')
+                    waitingState.x = socket
                     socket.emit('playerSym','X')
                     playerCount++
-                    states[lastAssignedState].x.emit('status','Waiting for O to connect')
+                    waitingState.x.emit('status','Waiting for O to connect')
                     io.sockets.emit('playerCountUpdate',playerCount)
                 }
                 else {
-                    console.log('State ID:',lastAssignedState,', O Connected')
-                    states[lastAssignedState].o = socket
+                    lastAssignedState++
+                    console.log('O Connected - State ID:',lastAssignedState)
+                    waitingState.o = socket
                     socket.emit('playerSym','O')
                     playerCount++
                     io.sockets.emit('playerCountUpdate',playerCount)
-                    states[lastAssignedState].x.emit('gameStart',lastAssignedState)
-                    states[lastAssignedState].o.emit('gameStart',lastAssignedState)
+                    waitingState.x.emit('gameStart',lastAssignedState)
+                    waitingState.o.emit('gameStart',lastAssignedState)
+                    states[lastAssignedState] = waitingState
+                    waitingState = {}
                     turnUpdate(states,lastAssignedState,'X',0,lastAssignedState)
                 }
             } else {
@@ -159,14 +161,14 @@ restoreBackup().then(states => {
                     states[stateId].x.emit('status','Grid will be restored when O reconnects')
                     states[stateId].x.emit('squaresUpdate',squaresInit(),[0,0,0,0,0,0,0])
                     playerCount++
-                    console.log('State ID:',stateId,', X RE-Connected')
+                    console.log('X RE-Connected - State ID:',stateId)
                 }
                 else if (symbol == 'O') {
                     states[stateId].o = socket
                     states[stateId].o.emit('status','Grid will be restored when X reconnects')
                     states[stateId].o.emit('squaresUpdate',squaresInit(),[0,0,0,0,0,0,0])
                     playerCount++
-                    console.log('State ID:',stateId,', O RE-Connected')
+                    console.log('O RE-Connected - State ID:',stateId)
                 }
                 if (states[stateId].x != '' && states[stateId].o != '') {
                     states[stateId].x.emit('squaresUpdate',states[stateId].squares,states[stateId].columnSize)
@@ -190,7 +192,7 @@ restoreBackup().then(states => {
         socket.on('disconnect',() => {
             for (var [k,v] of Object.entries(states)) {
                 if (states[k].x == socket) {
-                    console.log('State ID:',k,', X Left')
+                    console.log('X Left - State ID:',k)
                     if (states[k].o != '') {
                         states[k].o.emit('status','Your opponent has left. Please refresh page for a new opponent.')
                         states[k].o.disconnect()
@@ -202,7 +204,7 @@ restoreBackup().then(states => {
                     break
                 }
                 else if (states[k].o == socket) {
-                    console.log('State ID:',k,', O Left')
+                    console.log('O Left - State ID:',k)
                     if (states[k].x != '') {
                         states[k].x.emit('status','Your opponent has left. Please refresh page for a new opponent.')
                         states[k].x.disconnect()

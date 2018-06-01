@@ -92,7 +92,6 @@ const hoverInUpdate = (v,c) => {
     const squaresList = state.squares.map((d,i) => React.createElement('button',{style: {'max-width': '24px',padding: '10px 24px'},key: i,value: i,'data-column': i%7,onClick: (e) => moveUpdate(e,e.target.dataset.column),onMouseOver: (e)=> hoverInUpdate(e.target.value,e.target.dataset.column),onMouseOut: (e)=> setState()},state.squares[i]))
     for (r = 0;r<6;r++) {
         let hoverColor = 'green'
-        // if (state.enemyWin != -1 && state.enemyWin != c) {
         if (state.enemyWin != -1) {
             hoverColor = 'red'
         }
