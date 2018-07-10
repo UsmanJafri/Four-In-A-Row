@@ -1,5 +1,7 @@
 # Four-In-A-Row
 A purely NodeJS + ReactJS implementation of the classic Four-In-A-Row game. (Online Multiplayer)
+### Requirements
+1. Node.js
 ### Instructions (Server)
 1. Open a Terminal window in the directory containing server.js and run:
 > npm install socket.io
