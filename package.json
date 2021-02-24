@@ -1,0 +1,25 @@
+{
+  "name": "four-in-a-row",
+  "version": "1.19.0",
+  "description": "A React + NodeJS implementation of the classic 2-player game: Four-In-A-Row. Features online multiplayer.",
+  "main": "server.js",
+  "dependencies": {
+    "package-lock.json": "^1.0.0",
+    "socket.io": "^2.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UsmanJafri/Four-In-A-Row.git"
+  },
+  "author": "Usman Jafri",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/UsmanJafri/Four-In-A-Row/issues"
+  },
+  "homepage": "https://github.com/UsmanJafri/Four-In-A-Row#readme"
+}
